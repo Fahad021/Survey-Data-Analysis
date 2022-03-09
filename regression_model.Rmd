@@ -1,0 +1,145 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(dplyr)
+data <-read.csv("reduced_data.csv")
+glimpse(data)
+
+```
+```{r}
+data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)], 
+                                       as.factor)
+str(data)
+```
+
+```{r}
+
+model <- glm( Install ~ Tech+Evnum+age+gender+raceeth+edu+income,family=binomial(link='logit'),data=data)
+summary(model)
+```
+
+```{r}
+model2 <- glm( Install ~ MID+Tech+Evnum+age+gender+raceeth+edu+income,family=binomial(link='logit'),data=data)
+summary(model2)
+```
+```{r}
+# shuffle the dataframe by rows
+shuffled_data= data[sample(1:nrow(data)), ]
+shuffled_data = subset(shuffled_data, select = -c(X,MID) )
+  
+# display
+print(shuffled_data)
+
+create_train_test <- function(data, size = 0.8, train = TRUE) {
+    n_row = nrow(data)
+    total_row = size * n_row
+    train_sample <- 1: total_row
+    if (train == TRUE) {
+        return (data[train_sample, ])
+    } else {
+        return (data[-train_sample, ])
+    }
+}
+
+data_train <- create_train_test(shuffled_data, 0.8, train = TRUE)
+data_test <- create_train_test(shuffled_data, 0.8, train = FALSE)
+dim(data_train)
+dim(data_test)
+prop.table(table(data_train$Install))
+
+
+```
+
+```{r}
+install.packages("rpart.plot")
+
+```
+```{r}
+library(rpart)
+library(rpart.plot)
+fit <- rpart(Install~., data = data_train, method = 'class')
+rpart.plot(fit)
+```
+```{r}
+par(cex = .5, cex.axis= 4)
+plot(fit)
+text(fit)
+summary(fit)
+```
+
+```{r}
+prp(fit)
+```
+
+```{r}
+library(dplyr)
+data <-read.csv("binned_data_28feb.csv")
+glimpse(data)
+```
+```{r}
+data[sapply(data, is.character)] <- lapply(data[sapply(data, is.character)], 
+                                       as.factor)
+str(data)
+
+model <- glm( Install_binned ~ Tech_binned + Evnum_binned +age_binned +gender_binned +raceeth_binned +edu_binned 
+              + income_binned,family=binomial(link='logit'),data=data)
+summary(model)
+```
+
+
+```{r}
+data$predict = predict(model, newdata = NULL, type = "response")
+```
+
+```{r}
+write.csv(data, "output_from_R.csv")
+```
+
+
+
+```{r}
+# shuffle the dataframe by rows
+shuffled_data= data[sample(1:nrow(data)), ]
+shuffled_data = subset(shuffled_data, select = -c(X) )
+  
+# display
+print(shuffled_data)
+
+create_train_test <- function(data, size = 0.8, train = TRUE) {
+    n_row = nrow(data)
+    total_row = size * n_row
+    train_sample <- 1: total_row
+    if (train == TRUE) {
+        return (data[train_sample, ])
+    } else {
+        return (data[-train_sample, ])
+    }
+}
+
+data_train <- create_train_test(shuffled_data, 0.8, train = TRUE)
+data_test <- create_train_test(shuffled_data, 0.8, train = FALSE)
+dim(data_train)
+dim(data_test)
+prop.table(table(data_train$Install))
+```
+
+
+```{r}
+library(rpart)
+library(rpart.plot)
+fit <- rpart(Install_binned~., data = data_train, method = 'class', maxdepth = 3)
+rpart.plot(fit)
+```
+```{r}
+png("image.png", height = 800, width = 1400,  res= 400)
+rpart.plot(fit)
+```
+
+
